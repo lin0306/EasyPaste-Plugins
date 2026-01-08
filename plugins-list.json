@@ -1,1 +1,1 @@
-[  {    "id": "ocr",    "name": "OCR",    "version": "0.0.1",    "description": "Windows OCR插件，暂时只支持简体中文进行OCR",    "platform": "Windows",    "downloadUrl": "https://gh-proxy.com/https://github.com/lin0306/EasyPaste-Plugins/releases/tag/ocr-0.0.1/cor.zip"  }]
+[  {    "id": "ocr",    "name": "OCR",    "version": "0.0.1",    "description": "Windows OCR插件，暂时只支持简体中文进行OCR",    "platform": "Windows",    "downloadUrl": "https://gh-proxy.com/https://github.com/lin0306/EasyPaste-Plugins/releases/tag/ocr-0.0.1/cor.zip",    "size": 265955  }]
