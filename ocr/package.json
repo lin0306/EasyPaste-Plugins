@@ -1,7 +1,7 @@
 {
 	"name": "ocr",
 	"version": "0.0.1",
-	"description": "Windows OCR插件，暂时只支持简体中文进行OCR",
+	"description": "Windows OCR插件，暂时只支持纯简体中文的图片进行OCR，如果图片中存在除中文以外的其他字符，可能会出现识别错误的情况，这一版的OCR插件识别速度快，但是图片解析能力弱",
 	"scripts": {
 		"clean": "rimraf dist",
 		"build:vue": "vite build",
