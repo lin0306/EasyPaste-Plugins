@@ -10,7 +10,7 @@
   },
   {
     "id": "translate",
-    "name": "翻译",
+    "name": "文本翻译",
     "version": "0.0.1",
     "description": "多引擎翻译插件，支持 Google、DeepL、百度、有道等翻译服务",
     "platform": "General",
