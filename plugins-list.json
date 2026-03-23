@@ -1,1 +1,20 @@
-[  {    "id": "ocr",    "name": "OCR",    "version": "0.0.1",    "description": "Windows OCR插件，暂时只支持纯简体中文的图片进行OCR，如果图片中存在除中文以外的其他字符，可能会出现识别错误的情况，这一版的OCR插件识别速度快，但是图片解析能力弱",    "platform": "Windows",    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/ocr-0.0.1/ocr.zip",    "size": 265955  }]
+[
+  {
+    "id": "ocr",
+    "name": "OCR",
+    "version": "0.0.2",
+    "description": "基于 Tesseract 的跨平台 OCR 插件，支持中英文混合识别，提供快速模式和窗口模式",
+    "platform": "General",
+    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/ocr0.0.2_translate0.0.1/ocr.zip",
+    "size": 1286896
+  },
+  {
+    "id": "translate",
+    "name": "翻译",
+    "version": "0.0.1",
+    "description": "多引擎翻译插件，支持 Google、DeepL、百度、有道等翻译服务",
+    "platform": "General",
+    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/ocr0.0.2_translate0.0.1/translate.zip",
+    "size": 1214912
+  }
+]
