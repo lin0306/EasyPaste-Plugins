@@ -1,0 +1,183 @@
+{
+  "id": "translate",
+  "name": "文本翻译",
+  "version": "0.0.1",
+  "description": "多引擎翻译插件，支持 Google、DeepL、百度、有道等翻译服务",
+  "platform": "General",
+  "features": [
+    {
+      "id": "translate-context",
+      "page": "list",
+      "type": "contextMenu",
+      "location": "text",
+      "menus": [
+        {
+          "menuId": "translate-text",
+          "label_ZH": "翻译",
+          "label_EN": "Translate",
+          "click_fun": {
+            "type": "openWindow",
+            "width": 700,
+            "height": 500,
+            "params": [
+              "itemId"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "translate-page",
+      "page": "plugins",
+      "type": "page",
+      "title_ZH": "翻译",
+      "title_EN": "Translate"
+    },
+    {
+      "id": "translate-settings",
+      "page": "plugins",
+      "type": "settings",
+      "title_ZH": "翻译设置",
+      "title_EN": "Translation Settings"
+    }
+  ],
+  "config": {
+    "translationEngine": {
+      "type": "select",
+      "label_ZH": "翻译引擎",
+      "label_EN": "Translation Engine",
+      "options": [
+        {
+          "value": "google",
+          "label_ZH": "Google Translate",
+          "label_EN": "Google Translate"
+        },
+        {
+          "value": "deepl",
+          "label_ZH": "DeepL",
+          "label_EN": "DeepL"
+        },
+        {
+          "value": "baidu",
+          "label_ZH": "百度翻译",
+          "label_EN": "Baidu Translate"
+        },
+        {
+          "value": "youdao",
+          "label_ZH": "有道翻译",
+          "label_EN": "Youdao Translate"
+        }
+      ],
+      "default": "baidu"
+    },
+    "sourceLanguage": {
+      "type": "select",
+      "label_ZH": "源语言",
+      "label_EN": "Source Language",
+      "options": [
+        {
+          "value": "auto",
+          "label_ZH": "自动检测",
+          "label_EN": "Auto Detect"
+        },
+        {
+          "value": "zh",
+          "label_ZH": "中文",
+          "label_EN": "Chinese"
+        },
+        {
+          "value": "en",
+          "label_ZH": "英文",
+          "label_EN": "English"
+        },
+        {
+          "value": "ja",
+          "label_ZH": "日语",
+          "label_EN": "Japanese"
+        },
+        {
+          "value": "ko",
+          "label_ZH": "韩语",
+          "label_EN": "Korean"
+        },
+        {
+          "value": "fr",
+          "label_ZH": "法语",
+          "label_EN": "French"
+        },
+        {
+          "value": "de",
+          "label_ZH": "德语",
+          "label_EN": "German"
+        },
+        {
+          "value": "es",
+          "label_ZH": "西班牙语",
+          "label_EN": "Spanish"
+        },
+        {
+          "value": "ru",
+          "label_ZH": "俄语",
+          "label_EN": "Russian"
+        }
+      ],
+      "default": "auto"
+    },
+    "targetLanguage": {
+      "type": "select",
+      "label_ZH": "目标语言",
+      "label_EN": "Target Language",
+      "options": [
+        {
+          "value": "zh",
+          "label_ZH": "中文",
+          "label_EN": "Chinese"
+        },
+        {
+          "value": "en",
+          "label_ZH": "英文",
+          "label_EN": "English"
+        },
+        {
+          "value": "ja",
+          "label_ZH": "日语",
+          "label_EN": "Japanese"
+        },
+        {
+          "value": "ko",
+          "label_ZH": "韩语",
+          "label_EN": "Korean"
+        },
+        {
+          "value": "fr",
+          "label_ZH": "法语",
+          "label_EN": "French"
+        },
+        {
+          "value": "de",
+          "label_ZH": "德语",
+          "label_EN": "German"
+        },
+        {
+          "value": "es",
+          "label_ZH": "西班牙语",
+          "label_EN": "Spanish"
+        },
+        {
+          "value": "ru",
+          "label_ZH": "俄语",
+          "label_EN": "Russian"
+        }
+      ],
+      "default": "zh"
+    },
+    "apiKey": {
+      "type": "password",
+      "label_ZH": "API Key",
+      "label_EN": "API Key",
+      "placeholder_ZH": "请输入翻译引擎的 API Key（部分引擎需要）",
+      "placeholder_EN": "Enter your translation API Key (required for some engines)",
+      "default": ""
+    }
+  }
+}
