@@ -1,1 +1,101 @@
-{  "id": "ocr",  "name": "OCR",  "version": "0.0.1",  "description": "Windows OCR插件，暂时只支持纯简体中文的图片进行OCR，如果图片中存在除中文以外的其他字符，可能会出现识别错误的情况，这一版的OCR插件识别速度快，但是图片解析能力弱",  "platform": "Windows",  "features":[    {      "id": "ocr-context",      "page": "list",      "type": "contextMenu",      "location": "image",      "menus": [        {          "menuId": "ocr-preview",          "label_ZH": "图片识别",          "label_EN": "OCR",          "click_fun": {            "type": "openWindow",            "width": 800,            "height": 600,            "params":[              "filePath"            ]          }        }      ]    },    {      "id": "ocr-preview",      "page": "plugins",      "type": "page",      "title_ZH": "图片识别",      "title_EN": "OCR"    }  ]}
+{
+  "id": "ocr",
+  "name": "OCR",
+  "version": "0.0.3",
+  "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
+  "platform": "General",
+  "features": [
+    {
+      "id": "ocr-context",
+      "page": "list",
+      "type": "contextMenu",
+      "location": "image",
+      "menus": [
+        {
+          "menuId": "ocr-preview",
+          "label_ZH": "图片识别",
+          "label_EN": "OCR",
+          "click_fun": {
+            "type": "invoke",
+            "cmd": "ocr-image",
+            "params": [
+              "filePath"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ocr-page",
+      "page": "plugins",
+      "type": "page",
+      "title_ZH": "图片识别",
+      "title_EN": "OCR"
+    },
+    {
+      "id": "ocr-settings",
+      "page": "plugins",
+      "type": "settings",
+      "title_ZH": "OCR 设置",
+      "title_EN": "OCR Settings"
+    }
+  ],
+  "config": {
+    "ocrMode": {
+      "type": "select",
+      "label_ZH": "OCR 模式",
+      "label_EN": "OCR Mode",
+      "options": [
+        {
+          "value": "window",
+          "label_ZH": "窗口模式 - 打开窗口查看结果",
+          "label_EN": "Window Mode - Open window to view results"
+        },
+        {
+          "value": "quick",
+          "label_ZH": "快速模式 - 直接保存到剪贴板",
+          "label_EN": "Quick Mode - Save to clipboard directly"
+        }
+      ],
+      "default": "window"
+    },
+    "ocrLanguage": {
+      "type": "select",
+      "label_ZH": "识别语言",
+      "label_EN": "Recognition Language",
+      "options": [
+        {
+          "value": "chi_sim+eng",
+          "label_ZH": "中文 + 英文",
+          "label_EN": "Chinese + English"
+        },
+        {
+          "value": "chi_sim",
+          "label_ZH": "简体中文",
+          "label_EN": "Simplified Chinese"
+        },
+        {
+          "value": "eng",
+          "label_ZH": "英文",
+          "label_EN": "English"
+        },
+        {
+          "value": "chi_tra",
+          "label_ZH": "繁体中文",
+          "label_EN": "Traditional Chinese"
+        },
+        {
+          "value": "jpn",
+          "label_ZH": "日语",
+          "label_EN": "Japanese"
+        },
+        {
+          "value": "kor",
+          "label_ZH": "韩语",
+          "label_EN": "Korean"
+        }
+      ],
+      "default": "chi_sim+eng"
+    }
+  }
+}

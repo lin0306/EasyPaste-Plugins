@@ -1,24 +1,33 @@
 {
-	"name": "ocr",
-	"version": "0.0.1",
-	"description": "Windows OCR插件，暂时只支持纯简体中文的图片进行OCR，如果图片中存在除中文以外的其他字符，可能会出现识别错误的情况，这一版的OCR插件识别速度快，但是图片解析能力弱",
-	"scripts": {
-		"clean": "rimraf dist",
-		"build:vue": "vite build",
-		"build:rust": "cd rust && cargo build --release",
-		"build:copy": "node configs/copy-manifest.js",
-		"build": "npm run clean && npm run build:vue && npm run build:rust && npm run build:copy"
-	},
-	"devDependencies": {
-		"@tauri-apps/api": "^2",
-		"@tauri-apps/plugin-shell": "~2",
-		"@vitejs/plugin-vue": "^5.2.1",
-		"esbuild": "^0.27.2",
-		"rimraf": "^6.1.2",
-		"vite": "^6.0.3",
-		"vue": "^3.5.13"
-	},
-	"peerDependencies": {
-		"naive-ui": "^2.41.0"
-	}
+  "name": "ocr",
+  "version": "0.0.2",
+  "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
+  "scripts": {
+    "clean": "rimraf dist && rimraf ocr.zip",
+    "build:vue": "vite build",
+    "build:rust": "cd rust && cargo build --release",
+    "build:copy": "node configs/copy-manifest.js",
+    "build": "pnpm run clean && pnpm run build:vue && pnpm run build:rust && pnpm run build:copy && pnpm run package",
+    "dev": "vite",
+    "package": "node configs/package-zip.js"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-clipboard-manager": "^2",
+    "@tauri-apps/plugin-shell": "~2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "archiver": "^7.0.1",
+    "esbuild": "^0.27.2",
+    "rimraf": "^6.1.2",
+    "vite": "^6.0.3",
+    "vue": "^3.5.13",
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-brands-svg-icons": "^7.2.0",
+    "@fortawesome/free-regular-svg-icons": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/vue-fontawesome": "^3.1.3"
+  },
+  "peerDependencies": {
+    "naive-ui": "^2.41.0"
+  }
 }

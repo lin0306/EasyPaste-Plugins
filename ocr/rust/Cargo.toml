@@ -1,23 +1,35 @@
 [package]
 name = "ocr_plugin"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tauri =  "=2.7.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+anyhow = "1.0"
 
-# OCR依赖
-windows = { version = "0.58", features = [
-    "Graphics_Imaging",
-    "Storage_Streams",
-    "Media_Ocr",
-    "Globalization",
-    "Foundation_Collections",
-] }
+# 离线 OCR - 纯 Rust 实现
+ocrs = "0.12"
+
+# RTen 模型加载 (必须与 ocrs 使用的版本一致)
+rten = "0.24"
+
+# 图像处理
+image = "0.25"
+
 # 日志
 log = "0.4.29"
 env_logger = "0.10"
+
 # 时间处理
 chrono = { version = "0.4", features = ["clock"] }
+
+# HTTP 下载
+ureq = "2.9"
+
+# 系统目录
+dirs = "5.0"
+
+[profile.release]
+opt-level = 3
+lto = true
