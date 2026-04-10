@@ -8,8 +8,6 @@ if (!fs.existsSync(distDir)) {
     fs.mkdirSync(distDir, { recursive: true });
 }
 
-console.log('manifest.json copied to dist folder');
-
 // 创建 rust 子目录
 const rustDir = path.join(distDir, 'rust');
 if (!fs.existsSync(rustDir)) {
