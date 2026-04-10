@@ -362,12 +362,18 @@ fn get_app_data_dir() -> PathBuf {
         }
         return path;
     }
-    
+
+    // 获取主程序的Identifier
+    let result_path = match std::env::var("EASYPASTE_IDENTIFIER") {
+        Ok(identifier) => identifier,
+        _ => "com.lin.EasyPaste".to_string(),
+    };
+
     // 回退到系统应用数据目录
     #[cfg(target_os = "windows")]
     {
         if let Some(app_data) = dirs::data_dir() {
-            let path = app_data.join("com.lin.EasyPaste").join("plugins").join("ocr");
+            let path = app_data.join(result_path).join("plugins").join("ocr");
             if !path.exists() {
                 let _ = fs::create_dir_all(&path);
             }
@@ -378,7 +384,8 @@ fn get_app_data_dir() -> PathBuf {
     #[cfg(target_os = "macos")]
     {
         if let Some(home) = dirs::home_dir() {
-            let path = home.join("Library/Application Support/com.lin.EasyPaste/plugins/ocr");
+            let path = home.join("Library/Application Support").join(result_path).join("plugins/ocr");
+
             if !path.exists() {
                 let _ = fs::create_dir_all(&path);
             }
