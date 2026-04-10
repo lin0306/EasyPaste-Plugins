@@ -1,62 +1,71 @@
 <template>
   <div class="ocr-settings">
-    <n-divider title-placement="left">{{ $t('ocrSettingsTitle') }}</n-divider>
-    
+    <n-divider title-placement="left">{{ language.pages.plugins.ocr.settingsTitle }}</n-divider>
+
     <!-- OCR 模式选择 -->
     <div class="setting-item">
       <div class="setting-label">
-        <span>{{ $t('ocrMode') }}</span>
+        <span>{{ language.pages.plugins.ocr.ocrMode }}</span>
         <n-tooltip trigger="hover">
           <template #trigger>
             <svg class="hint-icon" viewBox="0 0 1024 1024">
-              <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" fill="currentColor"/>
+              <path
+                  d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"
+                  fill="currentColor"/>
               <path d="M512 336m-40 0a40 40 0 1 0 80 0 40 40 0 1 0-80 0Z" fill="currentColor"/>
-              <path d="M536 448h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z" fill="currentColor"/>
+              <path d="M536 448h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"
+                    fill="currentColor"/>
             </svg>
           </template>
-          <span>{{ $t('ocrModeHint') }}</span>
+          <span>{{ language.pages.plugins.ocr.ocrModeHint }}</span>
         </n-tooltip>
       </div>
       <n-select
-        v-model:value="config.ocrMode"
-        :options="ocrModeOptions"
-        class="setting-select"
+          v-model:value="config.ocrMode"
+          :options="ocrModeOptions"
+          class="setting-select"
       />
     </div>
 
     <!-- 识别语言选择 -->
     <div class="setting-item">
       <div class="setting-label">
-        <span>{{ $t('ocrLanguage') }}</span>
+        <span>{{ language.pages.plugins.ocr.ocrLanguage }}</span>
       </div>
       <n-select
-        v-model:value="config.ocrLanguage"
-        :options="ocrLanguageOptions"
-        class="setting-select"
+          v-model:value="config.ocrLanguage"
+          :options="ocrLanguageOptions"
+          class="setting-select"
       />
     </div>
 
     <!-- 保存按钮 -->
     <div class="setting-actions">
       <n-button type="primary" :loading="saving" @click="saveConfig">
-        {{ $t('saveBtn') }}
+        {{ language.pages.plugins.ocr.saveBtn }}
       </n-button>
     </div>
 
     <!-- 说明 -->
     <n-alert type="info" class="info-hint">
       <template #header>
-        {{ $t('infoTitle') }}
+        {{ language.pages.plugins.ocr.infoTitle }}
       </template>
-      <div v-html="$t('infoContent')"></div>
+      <p>{{ language.pages.plugins.ocr.desc }}</p>
+      <ul>
+        <li>{{ language.pages.plugins.ocr.rule1 }}</li>
+        <li>{{ language.pages.plugins.ocr.rule2 }}</li>
+        <li>{{ language.pages.plugins.ocr.rule3 }}</li>
+        <li>{{ language.pages.plugins.ocr.rule4 }}</li>
+      </ul>
     </n-alert>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { NSelect, NButton, NDivider, NTooltip, NAlert, useMessage } from 'naive-ui'
-import { invoke } from '@tauri-apps/api/core'
+import {computed, onMounted, ref} from 'vue'
+import {NAlert, NButton, NDivider, NSelect, NTooltip, useMessage} from 'naive-ui'
+import {invoke} from '@tauri-apps/api/core'
 
 const message = useMessage()
 
@@ -68,71 +77,24 @@ const config = ref({
 
 const saving = ref(false)
 
+// @ts-ignore
+const language = computed(() => window.currentLanguage?.value || window.currentLanguage)
+
 // OCR 模式选项
-const ocrModeOptions = [
-  { label: '窗口模式 - 打开窗口查看结果', value: 'window' },
-  { label: '快速模式 - 直接保存到剪贴板', value: 'quick' },
-]
+const ocrModeOptions = computed(() => [
+  {label: language.value.pages.plugins.ocr.windowModel, value: 'window'},
+  {label: language.value.pages.plugins.ocr.quickModel, value: 'quick'},
+])
 
 // OCR 语言选项
-const ocrLanguageOptions = [
-  { label: '中文 + 英文', value: 'chi_sim+eng' },
-  { label: '简体中文', value: 'chi_sim' },
-  { label: '英文', value: 'eng' },
-  { label: '繁体中文', value: 'chi_tra' },
-  { label: '日语', value: 'jpn' },
-  { label: '韩语', value: 'kor' },
-]
-
-// 多语言支持
-const messages: Record<string, Record<string, string>> = {
-  zh: {
-    ocrSettingsTitle: 'OCR 设置',
-    ocrMode: 'OCR 模式',
-    ocrModeHint: '快速模式将直接识别图片文字并保存到剪贴板，不打开窗口',
-    ocrLanguage: '识别语言',
-    saveBtn: '保存设置',
-    saveSuccess: '设置保存成功',
-    saveFailed: '设置保存失败',
-    loadFailed: '加载配置失败',
-    infoTitle: '离线 OCR 说明',
-    infoContent: `
-      <p>本插件使用纯 Rust 实现的离线 OCR 引擎，无需联网即可使用。</p>
-      <ul>
-        <li>✅ 无需安装额外软件</li>
-        <li>✅ 无需配置 API Key</li>
-        <li>✅ 支持中英文混合识别</li>
-        <li>⚠️ 首次识别可能需要加载模型（约 1-2 秒）</li>
-      </ul>
-    `,
-  },
-  en: {
-    ocrSettingsTitle: 'OCR Settings',
-    ocrMode: 'OCR Mode',
-    ocrModeHint: 'Quick mode will save recognized text to clipboard directly without opening a window',
-    ocrLanguage: 'Recognition Language',
-    saveBtn: 'Save Settings',
-    saveSuccess: 'Settings saved successfully',
-    saveFailed: 'Failed to save settings',
-    loadFailed: 'Failed to load configuration',
-    infoTitle: 'Offline OCR Info',
-    infoContent: `
-      <p>This plugin uses a pure Rust offline OCR engine, no internet required.</p>
-      <ul>
-        <li>✅ No additional software installation</li>
-        <li>✅ No API Key required</li>
-        <li>✅ Supports Chinese and English mixed recognition</li>
-        <li>⚠️ First recognition may take 1-2 seconds to load model</li>
-      </ul>
-    `,
-  },
-}
-
-// 简单的 i18n 实现
-const $t = (key: string): string => {
-  const lang = navigator.language.startsWith('zh') ? 'zh' : 'en'
-  return messages[lang][key] || key
-}
+const ocrLanguageOptions = computed(() => [
+  {label: language.value.pages.plugins.ocr.chiSimAndEng, value: 'chi_sim+eng'},
+  {label: language.value.pages.plugins.ocr.chiSim, value: 'chi_sim'},
+  {label: language.value.pages.plugins.ocr.eng, value: 'eng'},
+  {label: language.value.pages.plugins.ocr.chiTra, value: 'chi_tra'},
+  {label: language.value.pages.plugins.ocr.jpn, value: 'jpn'},
+  {label: language.value.pages.plugins.ocr.kor, value: 'kor'},
+])
 
 // 加载配置
 async function loadConfig() {
@@ -147,11 +109,11 @@ async function loadConfig() {
     const response = JSON.parse(result)
     if (response.result) {
       const savedConfig = JSON.parse(response.result)
-      config.value = { ...config.value, ...savedConfig }
+      config.value = {...config.value, ...savedConfig}
     }
   } catch (e) {
     console.error('加载配置失败:', e)
-    message.error($t('loadFailed'))
+    message.error(language.value.pages.plugins.ocr.loadFailed)
   }
 }
 
@@ -168,13 +130,13 @@ async function saveConfig() {
 
     const response = JSON.parse(result)
     if (response.result === 'success') {
-      message.success($t('saveSuccess'))
+      message.success(language.value.pages.plugins.ocr.saveSuccess)
     } else {
-      message.error($t('saveFailed'))
+      message.error(language.value.pages.plugins.ocr.saveFailed)
     }
   } catch (e) {
     console.error('保存配置失败:', e)
-    message.error($t('saveFailed'))
+    message.error(language.value.pages.plugins.ocr.saveFailed)
   } finally {
     saving.value = false
   }

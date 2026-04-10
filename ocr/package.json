@@ -1,12 +1,12 @@
 {
   "name": "ocr",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
   "scripts": {
     "clean": "rimraf dist && rimraf ocr.zip",
     "build:vue": "vite build",
     "build:rust": "cd rust && cargo build --release",
-    "build:copy": "node configs/copy-manifest.js",
+    "build:copy": "node configs/copy-rust.js",
     "build": "pnpm run clean && pnpm run build:vue && pnpm run build:rust && pnpm run build:copy && pnpm run package",
     "dev": "vite",
     "package": "node configs/package-zip.js"

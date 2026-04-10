@@ -8,8 +8,6 @@ if (!fs.existsSync(distDir)) {
     fs.mkdirSync(distDir, { recursive: true });
 }
 
-// 复制 manifest.json
-fs.copyFileSync('manifest.json', path.join(distDir, 'manifest.json'));
 console.log('manifest.json copied to dist folder');
 
 // 创建 rust 子目录

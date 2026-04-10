@@ -1,0 +1,39 @@
+{
+  "id": "ocr",
+  "name": "OCR",
+  "version": "0.0.3",
+  "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
+  "platform": "General",
+  "features": [
+    {
+      "id": "ocr-context",
+      "page": "list",
+      "type": "contextMenu",
+      "location": "image",
+      "menus": [
+        {
+          "menuId": "ocr-preview",
+          "labelCode": "contextMenu",
+          "click_fun": {
+            "type": "invoke",
+            "cmd": "ocr-image",
+            "params": [
+              "filePath"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ocr-page",
+      "page": "plugins",
+      "type": "page"
+    },
+    {
+      "id": "ocr-settings",
+      "page": "plugins",
+      "type": "settings",
+      "labelCode": "settingsTitle"
+    }
+  ]
+}
