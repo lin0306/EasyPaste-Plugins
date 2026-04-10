@@ -6,7 +6,7 @@
     "clean": "rimraf dist && rimraf translate.zip",
     "build:vue": "vite build",
     "build:rust": "cd rust && cargo build --release",
-    "build:copy": "node configs/copy-manifest.js",
+    "build:copy": "node configs/copy-rust.js",
     "build": "pnpm run clean && pnpm run build:vue && pnpm run build:rust && pnpm run build:copy && pnpm run package",
     "dev": "vite",
     "package": "node configs/package-zip.js"

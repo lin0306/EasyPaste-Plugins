@@ -40,6 +40,7 @@ function addStyles() {
     document.head.appendChild(style)
   }
 }
+
 // 尝试挂载的主逻辑
 function tryMount() {
   // 检查 createPluginVueApp 是否存在

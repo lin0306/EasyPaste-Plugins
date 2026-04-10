@@ -74,29 +74,13 @@ async fn main() {
         "translate" => {
             let payload_obj: serde_json::Value = serde_json::from_str(&req.payload).unwrap();
             let text = payload_obj["text"].as_str().unwrap_or("");
-            let config: TranslateConfig = serde_json::from_value(
-                payload_obj["config"].clone()
-            ).unwrap_or_default();
-            
+            let config: TranslateConfig =
+                serde_json::from_value(payload_obj["config"].clone()).unwrap_or_default();
+
             let translated = translate_text(text, &config).await;
             Response {
                 result: text.to_string(),
                 translation: Some(translated),
-            }
-        }
-        "get-config" => {
-            let config = load_config();
-            Response {
-                result: serde_json::to_string(&config).unwrap(),
-                translation: None,
-            }
-        }
-        "save-config" => {
-            let config: TranslateConfig = serde_json::from_str(&req.payload).unwrap();
-            let result = save_config(&config);
-            Response {
-                result: if result { "success".to_string() } else { "failed".to_string() },
-                translation: None,
             }
         }
         "get-api-keys" => {
@@ -110,7 +94,11 @@ async fn main() {
             let api_keys: ApiKeysConfig = serde_json::from_str(&req.payload).unwrap();
             let result = save_api_keys(&api_keys);
             Response {
-                result: if result { "success".to_string() } else { "failed".to_string() },
+                result: if result {
+                    "success".to_string()
+                } else {
+                    "failed".to_string()
+                },
                 translation: None,
             }
         }
@@ -156,7 +144,7 @@ async fn translate_text(text: &str, config: &TranslateConfig) -> String {
 /// Google Translate API
 async fn translate_with_google(text: &str, config: &TranslateConfig, api_key: &str) -> String {
     info!("Google 翻译请求: {} -> {}", text, config.target_language);
-    
+
     if api_key.is_empty() {
         return format!("[Google 翻译] 请在设置中配置 API Key\n原文: {}", text);
     }
@@ -174,23 +162,23 @@ async fn translate_with_google(text: &str, config: &TranslateConfig, api_key: &s
     });
 
     match client.post(&url).json(&body).send().await {
-        Ok(response) => {
-            match response.json::<serde_json::Value>().await {
-                Ok(json) => {
-                    if let Some(data) = json.get("data") {
-                        if let Some(translations) = data.get("translations") {
-                            if let Some(first) = translations.as_array().and_then(|arr| arr.first()) {
-                                if let Some(translated_text) = first.get("translatedText").and_then(|t| t.as_str()) {
-                                    return translated_text.to_string();
-                                }
+        Ok(response) => match response.json::<serde_json::Value>().await {
+            Ok(json) => {
+                if let Some(data) = json.get("data") {
+                    if let Some(translations) = data.get("translations") {
+                        if let Some(first) = translations.as_array().and_then(|arr| arr.first()) {
+                            if let Some(translated_text) =
+                                first.get("translatedText").and_then(|t| t.as_str())
+                            {
+                                return translated_text.to_string();
                             }
                         }
                     }
-                    format!("[Google 翻译失败] {:?}", json)
                 }
-                Err(e) => format!("[Google 翻译解析失败] {}", e),
+                format!("[Google 翻译失败] {:?}", json)
             }
-        }
+            Err(e) => format!("[Google 翻译解析失败] {}", e),
+        },
         Err(e) => format!("[Google 翻译请求失败] {}", e),
     }
 }
@@ -198,7 +186,7 @@ async fn translate_with_google(text: &str, config: &TranslateConfig, api_key: &s
 /// DeepL API
 async fn translate_with_deepl(text: &str, config: &TranslateConfig, api_key: &str) -> String {
     info!("DeepL 翻译请求: {} -> {}", text, config.target_language);
-    
+
     if api_key.is_empty() {
         return format!("[DeepL 翻译] 请在设置中配置 API Key\n原文: {}", text);
     }
@@ -221,7 +209,7 @@ async fn translate_with_deepl(text: &str, config: &TranslateConfig, api_key: &st
     let mut params = std::collections::HashMap::new();
     params.insert("text", text);
     params.insert("target_lang", target_lang);
-    
+
     if config.source_language != "auto" {
         let source_lang = match config.source_language.as_str() {
             "zh" => "ZH",
@@ -244,21 +232,19 @@ async fn translate_with_deepl(text: &str, config: &TranslateConfig, api_key: &st
         .send()
         .await
     {
-        Ok(response) => {
-            match response.json::<serde_json::Value>().await {
-                Ok(json) => {
-                    if let Some(translations) = json.get("translations") {
-                        if let Some(first) = translations.as_array().and_then(|arr| arr.first()) {
-                            if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
-                                return text.to_string();
-                            }
+        Ok(response) => match response.json::<serde_json::Value>().await {
+            Ok(json) => {
+                if let Some(translations) = json.get("translations") {
+                    if let Some(first) = translations.as_array().and_then(|arr| arr.first()) {
+                        if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
+                            return text.to_string();
                         }
                     }
-                    format!("[DeepL 翻译失败] {:?}", json)
                 }
-                Err(e) => format!("[DeepL 翻译解析失败] {}", e),
+                format!("[DeepL 翻译失败] {:?}", json)
             }
-        }
+            Err(e) => format!("[DeepL 翻译解析失败] {}", e),
+        },
         Err(e) => format!("[DeepL 翻译请求失败] {}", e),
     }
 }
@@ -266,15 +252,21 @@ async fn translate_with_deepl(text: &str, config: &TranslateConfig, api_key: &st
 /// 百度翻译 API
 async fn translate_with_baidu(text: &str, config: &TranslateConfig, api_key: &str) -> String {
     info!("百度翻译请求: {} -> {}", text, config.target_language);
-    
+
     if api_key.is_empty() {
-        return format!("[百度翻译] 请在设置中配置 API Key (格式: appid#secretKey)\n原文: {}", text);
+        return format!(
+            "[百度翻译] 请在设置中配置 API Key (格式: appid#secretKey)\n原文: {}",
+            text
+        );
     }
 
     // 解析 API Key (格式: appid#secretKey)
     let parts: Vec<&str> = api_key.split('#').collect();
     if parts.len() != 2 {
-        return format!("[百度翻译] API Key 格式错误，应为: appid#secretKey\n原文: {}", text);
+        return format!(
+            "[百度翻译] API Key 格式错误，应为: appid#secretKey\n原文: {}",
+            text
+        );
     }
 
     let appid = parts[0];
@@ -283,7 +275,11 @@ async fn translate_with_baidu(text: &str, config: &TranslateConfig, api_key: &st
     let sign = format!("{}{}{}{}", appid, text, salt, secret_key);
     let sign = format!("{:x}", md5::compute(sign));
 
-    let from = if config.source_language == "auto" { "auto" } else { &config.source_language };
+    let from = if config.source_language == "auto" {
+        "auto"
+    } else {
+        &config.source_language
+    };
     let to = match config.target_language.as_str() {
         "zh" => "zh",
         "en" => "en",
@@ -310,27 +306,25 @@ async fn translate_with_baidu(text: &str, config: &TranslateConfig, api_key: &st
 
     info!("百度翻译参数: {:?}", params);
     match client.get(url).query(&params).send().await {
-        Ok(response) => {
-            match response.json::<serde_json::Value>().await {
-                Ok(json) => {
-                    if let Some(trans_result) = json.get("trans_result") {
-                        if let Some(results) = trans_result.as_array() {
-                            let translated: Vec<String> = results
-                                .iter()
-                                .filter_map(|r| r.get("dst").and_then(|d| d.as_str()))
-                                .map(|s| s.to_string())
-                                .collect();
-                            return translated.join("\n");
-                        }
+        Ok(response) => match response.json::<serde_json::Value>().await {
+            Ok(json) => {
+                if let Some(trans_result) = json.get("trans_result") {
+                    if let Some(results) = trans_result.as_array() {
+                        let translated: Vec<String> = results
+                            .iter()
+                            .filter_map(|r| r.get("dst").and_then(|d| d.as_str()))
+                            .map(|s| s.to_string())
+                            .collect();
+                        return translated.join("\n");
                     }
-                    if let Some(error_msg) = json.get("error_msg").and_then(|m| m.as_str()) {
-                        return format!("[百度翻译失败] {}", error_msg);
-                    }
-                    format!("[百度翻译失败] {:?}", json)
                 }
-                Err(e) => format!("[百度翻译解析失败] {}", e),
+                if let Some(error_msg) = json.get("error_msg").and_then(|m| m.as_str()) {
+                    return format!("[百度翻译失败] {}", error_msg);
+                }
+                format!("[百度翻译失败] {:?}", json)
             }
-        }
+            Err(e) => format!("[百度翻译解析失败] {}", e),
+        },
         Err(e) => format!("[百度翻译请求失败] {}", e),
     }
 }
@@ -338,33 +332,43 @@ async fn translate_with_baidu(text: &str, config: &TranslateConfig, api_key: &st
 /// 有道翻译 API
 async fn translate_with_youdao(text: &str, config: &TranslateConfig, api_key: &str) -> String {
     info!("有道翻译请求: {} -> {}", text, config.target_language);
-    
+
     if api_key.is_empty() {
-        return format!("[有道翻译] 请在设置中配置 API Key (格式: appid#secretKey)\n原文: {}", text);
+        return format!(
+            "[有道翻译] 请在设置中配置 API Key (格式: appid#secretKey)\n原文: {}",
+            text
+        );
     }
 
     // 解析 API Key (格式: appid#secretKey)
     let parts: Vec<&str> = api_key.split('#').collect();
     if parts.len() != 2 {
-        return format!("[有道翻译] API Key 格式错误，应为: appid#secretKey\n原文: {}", text);
+        return format!(
+            "[有道翻译] API Key 格式错误，应为: appid#secretKey\n原文: {}",
+            text
+        );
     }
 
     let appid = parts[0];
     let secret_key = parts[1];
     let salt = chrono::Local::now().timestamp_millis().to_string();
     let curtime = (chrono::Local::now().timestamp()).to_string();
-    
+
     // 计算 input (如果长度大于 20，取前 10 + 长度 + 后 10)
     let input = if text.len() > 20 {
-        format!("{}{}{}", &text[..10], text.len(), &text[text.len()-10..])
+        format!("{}{}{}", &text[..10], text.len(), &text[text.len() - 10..])
     } else {
         text.to_string()
     };
-    
+
     let sign = format!("{}{}{}{}{}", appid, input, salt, curtime, secret_key);
     let sign = sha256::digest(sign);
 
-    let from = if config.source_language == "auto" { "auto" } else { &config.source_language };
+    let from = if config.source_language == "auto" {
+        "auto"
+    } else {
+        &config.source_language
+    };
     let to = &config.target_language;
 
     let client = reqwest::Client::new();
@@ -382,25 +386,24 @@ async fn translate_with_youdao(text: &str, config: &TranslateConfig, api_key: &s
     ];
 
     match client.post(url).form(&params).send().await {
-        Ok(response) => {
-            match response.json::<serde_json::Value>().await {
-                Ok(json) => {
-                    if let Some(translation) = json.get("translation") {
-                        if let Some(results) = translation.as_array() {
-                            let texts: Vec<String> = results.iter()
-                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                                .collect();
-                            return texts.join("\n");
-                        }
+        Ok(response) => match response.json::<serde_json::Value>().await {
+            Ok(json) => {
+                if let Some(translation) = json.get("translation") {
+                    if let Some(results) = translation.as_array() {
+                        let texts: Vec<String> = results
+                            .iter()
+                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                            .collect();
+                        return texts.join("\n");
                     }
-                    if let Some(error_msg) = json.get("errorMsg").and_then(|m| m.as_str()) {
-                        return format!("[有道翻译失败] {}", error_msg);
-                    }
-                    format!("[有道翻译失败] {:?}", json)
                 }
-                Err(e) => format!("[有道翻译解析失败] {}", e),
+                if let Some(error_msg) = json.get("errorMsg").and_then(|m| m.as_str()) {
+                    return format!("[有道翻译失败] {}", error_msg);
+                }
+                format!("[有道翻译失败] {:?}", json)
             }
-        }
+            Err(e) => format!("[有道翻译解析失败] {}", e),
+        },
         Err(e) => format!("[有道翻译请求失败] {}", e),
     }
 }
@@ -410,53 +413,25 @@ mod sha256 {
     pub fn digest(input: String) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         input.hash(&mut hasher);
         let hash = hasher.finish();
-        
-        format!("{:016x}{:016x}{:016x}{:016x}", 
-            hash, hash.wrapping_mul(31), 
-            hash.wrapping_mul(131), hash.wrapping_mul(313))
-    }
-}
 
-/// 加载配置
-fn load_config() -> TranslateConfig {
-    let config_path = get_config_path();
-    
-    if !config_path.exists() {
-        return TranslateConfig::default();
-    }
-
-    match fs::read_to_string(&config_path) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => TranslateConfig::default(),
-    }
-}
-
-/// 保存配置
-fn save_config(config: &TranslateConfig) -> bool {
-    let config_path = get_config_path();
-    
-    if let Some(parent) = config_path.parent() {
-        if !parent.exists() {
-            if fs::create_dir_all(parent).is_err() {
-                return false;
-            }
-        }
-    }
-
-    match serde_json::to_string_pretty(config) {
-        Ok(json) => fs::write(&config_path, json).is_ok(),
-        Err(_) => false,
+        format!(
+            "{:016x}{:016x}{:016x}{:016x}",
+            hash,
+            hash.wrapping_mul(31),
+            hash.wrapping_mul(131),
+            hash.wrapping_mul(313)
+        )
     }
 }
 
 /// 加载 API Keys
 fn load_api_keys() -> ApiKeysConfig {
     let config_path = get_api_keys_path();
-    
+
     if !config_path.exists() {
         return ApiKeysConfig::default();
     }
@@ -470,7 +445,7 @@ fn load_api_keys() -> ApiKeysConfig {
 /// 保存 API Keys
 fn save_api_keys(api_keys: &ApiKeysConfig) -> bool {
     let config_path = get_api_keys_path();
-    
+
     if let Some(parent) = config_path.parent() {
         if !parent.exists() {
             if fs::create_dir_all(parent).is_err() {
@@ -495,23 +470,33 @@ fn get_app_data_dir() -> PathBuf {
         }
         return path;
     }
-    
+
+    // 获取主程序的Identifier
+    let result_path = match std::env::var("EASYPASTE_IDENTIFIER") {
+        Ok(identifier) => identifier,
+        _ => "com.lin.EasyPaste".to_string(),
+    };
+
     // 回退到系统应用数据目录
     #[cfg(target_os = "windows")]
     {
         if let Some(app_data) = dirs::data_dir() {
-            let path = app_data.join("com.lin.EasyPaste").join("plugins").join("translate");
+            let path = app_data
+                .join(result_path)
+                .join("plugins")
+                .join("translate");
             if !path.exists() {
                 let _ = fs::create_dir_all(&path);
             }
             return path;
         }
     }
-    
+
     #[cfg(target_os = "macos")]
     {
         if let Some(home) = dirs::home_dir() {
-            let path = home.join("Library/Application Support/com.lin.EasyPaste/plugins/translate");
+            let path = home.join("Library/Application Support").join(result_path).join("plugins/translate");
+
             if !path.exists() {
                 let _ = fs::create_dir_all(&path);
             }

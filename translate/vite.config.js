@@ -9,11 +9,13 @@ function definePluginBundleConfig() {
             vue(),
         ],
         assetsInclude: ['assets/*'],
+        publicDir: 'public',
         define: {
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
         },
         build: {
-            cssCodeSplit: false,
+            copyPublicDir: true, // 是否复制 public 目录下的文件
+            cssCodeSplit: false, // 是否将 CSS 拆分到单独的文件中
             lib: {
                 entry: 'src/entry-web-component.ts',
                 name: 'TranslatePlugin',
@@ -27,6 +29,7 @@ function definePluginBundleConfig() {
                 output: {
                     globals: {
                         vue: 'Vue',
+                        // 添加 Tauri API 的全局引用
                         '@tauri-apps/api/core': 'window.__TAURI__.core',
                         '@tauri-apps/api': 'window.__TAURI__',
                         '@tauri-apps/api/event': 'window.__TAURI__.event',

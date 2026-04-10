@@ -9,7 +9,7 @@
           class="lang-select"
           :teleported="true"
       />
-      <n-button text size="small" @click="swapLanguages" class="swap-btn">
+      <n-button text size="small" @click="swapLanguages" class="swap-btn" :disabled="config.sourceLanguage===`auto`">
         <template #icon>
           <font-awesome-icon :icon="faRightLeft" class="btn-icon"/>
         </template>
@@ -26,19 +26,19 @@
     <!-- 源文本 -->
     <div class="text-section">
       <div class="section-header">
-        <span class="section-title">{{ $t('sourceText') }}</span>
+        <span class="section-title">{{ language.pages.plugins.translate.sourceText }}</span>
         <n-button text size="small" @click="copyText(sourceText)">
           <template #icon>
-            <font-awesome-icon :icon="faCopy" class="btn-icon" />
+            <font-awesome-icon :icon="faCopy" class="btn-icon"/>
           </template>
-          {{ $t('copy') }}
+          {{ language.pages.plugins.translate.copy }}
         </n-button>
       </div>
       <n-input
           v-model:value="sourceText"
           type="textarea"
           :rows="5"
-          :placeholder="$t('sourcePlaceholder')"
+          :placeholder="language.pages.plugins.translate.sourcePlaceholder"
           class="text-input"
       />
     </div>
@@ -46,26 +46,26 @@
     <!-- 操作栏 -->
     <div class="action-bar">
       <n-button type="primary" :loading="translating" @click="doTranslate">
-        {{ $t('translate') }}
+        {{ language.pages.plugins.translate.translate }}
       </n-button>
     </div>
 
     <!-- 翻译结果 -->
     <div class="text-section">
       <div class="section-header">
-        <span class="section-title">{{ $t('translatedText') }}</span>
+        <span class="section-title">{{ language.pages.plugins.translate.translatedText }}</span>
         <n-button text size="small" @click="copyText(translatedText)">
           <template #icon>
-            <font-awesome-icon :icon="faCopy" class="btn-icon" />
+            <font-awesome-icon :icon="faCopy" class="btn-icon"/>
           </template>
-          {{ $t('copy') }}
+          {{ language.pages.plugins.translate.copy }}
         </n-button>
       </div>
       <n-input
           v-model:value="translatedText"
           type="textarea"
           :rows="5"
-          :placeholder="$t('translatedPlaceholder')"
+          :placeholder="language.pages.plugins.translate.translatedPlaceholder"
           class="text-input"
           readonly
       />
@@ -74,7 +74,7 @@
     <!-- 状态栏 -->
     <div class="status-bar">
       <span v-if="config.translationEngine">
-        {{ $t('engine') }}: {{ engineName }}
+        {{ language.pages.plugins.translate.engine }}: {{ engineName }}
       </span>
     </div>
   </div>
@@ -101,110 +101,44 @@ const config = ref({
   targetLanguage: 'zh',
 })
 
+// @ts-ignore
+const language = computed(() => window.currentLanguage?.value || window.currentLanguage)
+
 // 源语言选项（包含自动检测）
-const sourceLangOptions = [
-  {label: '自动检测', value: 'auto'},
-  {label: '中文', value: 'zh'},
-  {label: '英文', value: 'en'},
-  {label: '日语', value: 'ja'},
-  {label: '韩语', value: 'ko'},
-  {label: '法语', value: 'fr'},
-  {label: '德语', value: 'de'},
-  {label: '西班牙语', value: 'es'},
-  {label: '俄语', value: 'ru'},
-]
+const sourceLangOptions = computed(() => [
+  {label: language.value.pages.plugins.translate.auto, value: 'auto'},
+  {label: language.value.pages.plugins.translate.zh, value: 'zh'},
+  {label: language.value.pages.plugins.translate.en, value: 'en'},
+  {label: language.value.pages.plugins.translate.ja, value: 'ja'},
+  {label: language.value.pages.plugins.translate.ko, value: 'ko'},
+  {label: language.value.pages.plugins.translate.fr, value: 'fr'},
+  {label: language.value.pages.plugins.translate.de, value: 'de'},
+  {label: language.value.pages.plugins.translate.es, value: 'es'},
+  {label: language.value.pages.plugins.translate.ru, value: 'ru'},
+])
 
 // 目标语言选项
-const targetLangOptions = [
-  {label: '中文', value: 'zh'},
-  {label: '英文', value: 'en'},
-  {label: '日语', value: 'ja'},
-  {label: '韩语', value: 'ko'},
-  {label: '法语', value: 'fr'},
-  {label: '德语', value: 'de'},
-  {label: '西班牙语', value: 'es'},
-  {label: '俄语', value: 'ru'},
-]
+const targetLangOptions = computed(() => [
+  {label: language.value.pages.plugins.translate.zh, value: 'zh'},
+  {label: language.value.pages.plugins.translate.en, value: 'en'},
+  {label: language.value.pages.plugins.translate.ja, value: 'ja'},
+  {label: language.value.pages.plugins.translate.ko, value: 'ko'},
+  {label: language.value.pages.plugins.translate.fr, value: 'fr'},
+  {label: language.value.pages.plugins.translate.de, value: 'de'},
+  {label: language.value.pages.plugins.translate.es, value: 'es'},
+  {label: language.value.pages.plugins.translate.ru, value: 'ru'},
+])
 
 // 计算属性
 const engineName = computed(() => {
   const names: Record<string, string> = {
-    google: 'Google',
-    deepl: 'DeepL',
-    baidu: '百度',
-    youdao: '有道',
+    google: language.value.pages.plugins.translate.GoogleTranslate,
+    deepl: language.value.pages.plugins.translate.DeepL,
+    baidu: language.value.pages.plugins.translate.BaiDuTranslate,
+    youdao: language.value.pages.plugins.translate.YouDaoTranslate,
   }
   return names[config.value.translationEngine] || config.value.translationEngine
 })
-
-// 多语言支持
-const messages: Record<string, Record<string, string>> = {
-  zh: {
-    sourceText: '原文',
-    translatedText: '译文',
-    sourcePlaceholder: '请输入要翻译的文本',
-    translatedPlaceholder: '翻译结果将显示在这里',
-    translate: '翻译',
-    copy: '复制',
-    copySuccess: '已复制到剪贴板',
-    engine: '引擎',
-    translateFailed: '翻译失败',
-  },
-  en: {
-    sourceText: 'Source',
-    translatedText: 'Translation',
-    sourcePlaceholder: 'Enter text to translate',
-    translatedPlaceholder: 'Translation will appear here',
-    translate: 'Translate',
-    copy: 'Copy',
-    copySuccess: 'Copied to clipboard',
-    engine: 'Engine',
-    translateFailed: 'Translation failed',
-  },
-}
-
-const $t = (key: string): string => {
-  const lang = navigator.language.startsWith('zh') ? 'zh' : 'en'
-  return messages[lang][key] || key
-}
-
-// 加载配置
-async function loadConfig() {
-  try {
-    const result = await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'get-config',
-      payload: '{}',
-    }) as string
-
-    const response = JSON.parse(result)
-    if (response.result) {
-      const savedConfig = JSON.parse(response.result)
-      config.value = {...config.value, ...savedConfig}
-    }
-  } catch (e) {
-    console.error('加载配置失败:', e)
-  }
-}
-
-// 保存配置
-async function saveConfig() {
-  try {
-    await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'save-config',
-      payload: JSON.stringify({
-        translationEngine: config.value.translationEngine,
-        sourceLanguage: config.value.sourceLanguage,
-        targetLanguage: config.value.targetLanguage,
-      }),
-    })
-  } catch (e) {
-    console.error('保存配置失败:', e)
-  }
-}
 
 // 执行翻译
 async function doTranslate() {
@@ -230,11 +164,11 @@ async function doTranslate() {
     if (response.translation) {
       translatedText.value = response.translation
     } else {
-      translatedText.value = $t('translateFailed')
+      translatedText.value = language.value.pages.plugins.translate.translateFailed
     }
   } catch (e) {
     console.error('翻译失败:', e)
-    translatedText.value = $t('translateFailed')
+    translatedText.value = language.value.pages.plugins.translate.translateFailed
   } finally {
     translating.value = false
   }
@@ -246,12 +180,9 @@ function swapLanguages() {
     const temp = config.value.sourceLanguage
     config.value.sourceLanguage = config.value.targetLanguage
     config.value.targetLanguage = temp
-    // 保存配置
-    saveConfig()
   } else {
     // 如果源语言是自动，则只交换到源语言
     config.value.sourceLanguage = config.value.targetLanguage
-    saveConfig()
   }
 }
 
@@ -260,7 +191,7 @@ async function copyText(text: string) {
   if (!text) return
   try {
     await writeText(text)
-    message.success($t('copySuccess'))
+    message.success(language.value.pages.plugins.translate.copySuccess)
   } catch (e) {
     console.error('复制失败:', e)
   }
@@ -285,7 +216,6 @@ async function initReloadListener() {
 }
 
 onMounted(async () => {
-  await loadConfig()
   await initReloadListener()
 
   // 从 URL 参数获取文本

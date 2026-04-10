@@ -1,0 +1,40 @@
+{
+  "id": "translate",
+  "name": "文本翻译",
+  "version": "0.0.2",
+  "description": "多引擎翻译插件，支持 Google、DeepL、百度、有道等翻译服务",
+  "platform": "Windows",
+  "features": [
+    {
+      "id": "translate-context",
+      "page": "list",
+      "type": "contextMenu",
+      "location": "text",
+      "menus": [
+        {
+          "menuId": "translate-text",
+          "labelCode": "contextMenu",
+          "click_fun": {
+            "type": "openWindow",
+            "width": 700,
+            "height": 500,
+            "params": {
+              "pageId": "view-page"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "translate-page",
+      "page": "plugins",
+      "type": "page",
+      "labelCode": "previewWindowTitle"
+    },
+    {
+      "id": "translate-settings",
+      "page": "plugins",
+      "type": "settings"
+    }
+  ]
+}
