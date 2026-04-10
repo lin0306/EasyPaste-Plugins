@@ -510,11 +510,6 @@ fn get_app_data_dir() -> PathBuf {
     exe_dir.join("config")
 }
 
-/// 获取配置文件路径
-fn get_config_path() -> PathBuf {
-    get_app_data_dir().join("translate-config.json")
-}
-
 /// 获取 API Keys 文件路径
 fn get_api_keys_path() -> PathBuf {
     get_app_data_dir().join("translate-api-keys.json")
