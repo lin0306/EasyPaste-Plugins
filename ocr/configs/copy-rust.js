@@ -23,7 +23,7 @@ if (platform === 'win32') {
 } else if (platform === 'darwin' || platform === 'linux') {
     exeName = 'ocr_plugin';
 } else {
-    console.warn(`Unsupported platform: ${platform}. Skipping plugin binary copy.`);
+    console.warn(`不支持的平台: ${platform}，跳过插件二进制文件复制。`);
     return;
 }
 
@@ -32,10 +32,10 @@ const destExePath = path.join(rustDir, exeName);
 
 if (fs.existsSync(srcExePath)) {
     fs.copyFileSync(srcExePath, destExePath);
-    console.log(`${exeName} copied to dist/rust folder`);
+    console.log(`${exeName} 已复制到 dist/rust 文件夹`);
 } else {
-    console.error(`⚠️ Source executable not found: ${srcExePath}`);
-    console.error('Make sure you have built the plugin with `cargo build --release`.');
+    console.error(`⚠️ 未找到可执行文件: ${srcExePath}`);
+    console.error('请确保已使用 `cargo build --release` 构建插件。');
 }
 
-console.log('Build copy completed!');
+console.log('构建复制完成！');
