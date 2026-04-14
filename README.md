@@ -1,6 +1,6 @@
 # EasyPaste-Plugins
 
-EasyPaste 剪贴板管理工具的插件集合，提供 OCR 文字识别和文本翻译等实用功能。
+[EasyPaste](https://github.com/lin0306/EasyPaste) 剪贴板管理工具的插件集合，提供 OCR 文字识别和文本翻译等实用功能。
 
 ## 📦 插件列表
 
