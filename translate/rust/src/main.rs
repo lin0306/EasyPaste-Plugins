@@ -1,9 +1,11 @@
+use std::env;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read};
 use std::path::PathBuf;
 
 use log::{info, LevelFilter};
+use serde_json::Value;
 
 #[derive(Deserialize, Debug)]
 struct Request {
@@ -18,7 +20,14 @@ struct Response {
     translation: Option<String>,
 }
 
-/// 翻译配置 - 只包含引擎和语言设置
+/// 翻译引擎配置
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct EngineConfig {
+    #[serde(rename = "translationEngine")]
+    translation_engine: String,
+}
+
+/// 翻译配置 - 包含引擎和语言设置
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TranslateConfig {
     #[serde(rename = "translationEngine")]
@@ -29,12 +38,10 @@ struct TranslateConfig {
     target_language: String,
 }
 
-impl Default for TranslateConfig {
+impl Default for EngineConfig {
     fn default() -> Self {
         Self {
             translation_engine: "baidu".to_string(),
-            source_language: "auto".to_string(),
-            target_language: "zh".to_string(),
         }
     }
 }
@@ -72,15 +79,30 @@ async fn main() {
 
     let resp = match req.cmd.as_str() {
         "translate" => {
-            let payload_obj: serde_json::Value = serde_json::from_str(&req.payload).unwrap();
+            let payload_obj: Value = serde_json::from_str(&req.payload).unwrap();
             let text = payload_obj["text"].as_str().unwrap_or("");
             let config: TranslateConfig =
-                serde_json::from_value(payload_obj["config"].clone()).unwrap_or_default();
+                serde_json::from_value(payload_obj["config"].clone()).expect("翻译配置异常");
 
             let translated = translate_text(text, &config).await;
             Response {
                 result: text.to_string(),
                 translation: Some(translated),
+            }
+        }
+        "get-config" => {
+            let config = load_config();
+            Response {
+                result: serde_json::to_string(&config).unwrap(),
+                translation: None,
+            }
+        }
+        "save-config" => {
+            let config: EngineConfig = serde_json::from_str(&req.payload).unwrap();
+            let result = save_config(&config);
+            Response {
+                result: if result { "success".to_string() } else { "failed".to_string() },
+                translation: None,
             }
         }
         "get-api-keys" => {
@@ -162,7 +184,7 @@ async fn translate_with_google(text: &str, config: &TranslateConfig, api_key: &s
     });
 
     match client.post(&url).json(&body).send().await {
-        Ok(response) => match response.json::<serde_json::Value>().await {
+        Ok(response) => match response.json::<Value>().await {
             Ok(json) => {
                 if let Some(data) = json.get("data") {
                     if let Some(translations) = data.get("translations") {
@@ -232,7 +254,7 @@ async fn translate_with_deepl(text: &str, config: &TranslateConfig, api_key: &st
         .send()
         .await
     {
-        Ok(response) => match response.json::<serde_json::Value>().await {
+        Ok(response) => match response.json::<Value>().await {
             Ok(json) => {
                 if let Some(translations) = json.get("translations") {
                     if let Some(first) = translations.as_array().and_then(|arr| arr.first()) {
@@ -306,7 +328,7 @@ async fn translate_with_baidu(text: &str, config: &TranslateConfig, api_key: &st
 
     info!("百度翻译参数: {:?}", params);
     match client.get(url).query(&params).send().await {
-        Ok(response) => match response.json::<serde_json::Value>().await {
+        Ok(response) => match response.json::<Value>().await {
             Ok(json) => {
                 if let Some(trans_result) = json.get("trans_result") {
                     if let Some(results) = trans_result.as_array() {
@@ -352,7 +374,7 @@ async fn translate_with_youdao(text: &str, config: &TranslateConfig, api_key: &s
     let appid = parts[0];
     let secret_key = parts[1];
     let salt = chrono::Local::now().timestamp_millis().to_string();
-    let curtime = (chrono::Local::now().timestamp()).to_string();
+    let cur_time = chrono::Local::now().timestamp().to_string();
 
     // 计算 input (如果长度大于 20，取前 10 + 长度 + 后 10)
     let input = if text.len() > 20 {
@@ -361,7 +383,7 @@ async fn translate_with_youdao(text: &str, config: &TranslateConfig, api_key: &s
         text.to_string()
     };
 
-    let sign = format!("{}{}{}{}{}", appid, input, salt, curtime, secret_key);
+    let sign = format!("{}{}{}{}{}", appid, input, salt, cur_time, secret_key);
     let sign = sha256::digest(sign);
 
     let from = if config.source_language == "auto" {
@@ -382,11 +404,11 @@ async fn translate_with_youdao(text: &str, config: &TranslateConfig, api_key: &s
         ("salt", &salt),
         ("sign", &sign),
         ("signType", "v3"),
-        ("curtime", &curtime),
+        ("curtime", &cur_time),
     ];
 
     match client.post(url).form(&params).send().await {
-        Ok(response) => match response.json::<serde_json::Value>().await {
+        Ok(response) => match response.json::<Value>().await {
             Ok(json) => {
                 if let Some(translation) = json.get("translation") {
                     if let Some(results) = translation.as_array() {
@@ -428,6 +450,30 @@ mod sha256 {
     }
 }
 
+
+/// 加载配置
+fn load_config() -> EngineConfig {
+    let config_path = get_config_path();
+
+    if !config_path.exists() {
+        return EngineConfig::default();
+    }
+
+    match fs::read_to_string(&config_path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => EngineConfig::default(),
+    }
+}
+
+/// 保存配置
+fn save_config(config: &EngineConfig) -> bool {
+    let config_path = get_config_path();
+    match serde_json::to_string_pretty(config) {
+        Ok(json) => save_data_to_file(config_path, json),
+        Err(_) => false,
+    }
+}
+
 /// 加载 API Keys
 fn load_api_keys() -> ApiKeysConfig {
     let config_path = get_api_keys_path();
@@ -445,8 +491,15 @@ fn load_api_keys() -> ApiKeysConfig {
 /// 保存 API Keys
 fn save_api_keys(api_keys: &ApiKeysConfig) -> bool {
     let config_path = get_api_keys_path();
+    match serde_json::to_string_pretty(api_keys) {
+        Ok(json) => save_data_to_file(config_path, json),
+        Err(_) => false,
+    }
+}
 
-    if let Some(parent) = config_path.parent() {
+/// 保存数据到文件
+fn save_data_to_file(file_path: PathBuf, data: String) -> bool {
+    if let Some(parent) = file_path.parent() {
         if !parent.exists() {
             if fs::create_dir_all(parent).is_err() {
                 return false;
@@ -454,16 +507,13 @@ fn save_api_keys(api_keys: &ApiKeysConfig) -> bool {
         }
     }
 
-    match serde_json::to_string_pretty(api_keys) {
-        Ok(json) => fs::write(&config_path, json).is_ok(),
-        Err(_) => false,
-    }
+    fs::write(&file_path, data).is_ok()
 }
 
 /// 获取应用数据目录
 fn get_app_data_dir() -> PathBuf {
     // 首先尝试从环境变量获取（由主应用传递）
-    if let Ok(data_dir) = std::env::var("EASYPASTE_DATA_DIR") {
+    if let Ok(data_dir) = env::var("EASYPASTE_DATA_DIR") {
         let path = PathBuf::from(data_dir).join("plugins").join("translate");
         if !path.exists() {
             let _ = fs::create_dir_all(&path);
@@ -472,7 +522,7 @@ fn get_app_data_dir() -> PathBuf {
     }
 
     // 获取主程序的Identifier
-    let result_path = match std::env::var("EASYPASTE_IDENTIFIER") {
+    let result_path = match env::var("EASYPASTE_IDENTIFIER") {
         Ok(identifier) => identifier,
         _ => "com.lin.EasyPaste".to_string(),
     };
@@ -505,9 +555,14 @@ fn get_app_data_dir() -> PathBuf {
     }
     
     // 最后回退到插件目录
-    let exe_path = std::env::current_exe().unwrap_or_default();
+    let exe_path = env::current_exe().unwrap_or_default();
     let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
     exe_dir.join("config")
+}
+
+/// 获取配置文件路径
+fn get_config_path() -> PathBuf {
+    get_app_data_dir().join("translate-config.json")
 }
 
 /// 获取 API Keys 文件路径
@@ -517,10 +572,13 @@ fn get_api_keys_path() -> PathBuf {
 
 /// 初始化日志配置
 pub fn init_logger() {
-    let log_path = get_app_data_dir().join("logs").join("translate.log");
+    let log_path = match env::var("EASYPASTE_LOGS") {
+        Ok(log_dir) => PathBuf::from(log_dir).join("translate").join("translate.log"),
+        _ => get_app_data_dir().join("ocr").join("translate.log"),
+    };
 
     let logs_dir = log_path.parent().unwrap();
-    std::fs::create_dir_all(logs_dir).expect("无法创建日志目录");
+    fs::create_dir_all(logs_dir).expect("无法创建日志目录");
 
     let log_file = OpenOptions::new()
         .create(true)

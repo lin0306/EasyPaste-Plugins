@@ -37,7 +37,7 @@
       <n-input
           v-model:value="sourceText"
           type="textarea"
-          :rows="5"
+          :rows="4"
           :placeholder="language.pages.plugins.translate.sourcePlaceholder"
           class="text-input"
       />
@@ -64,7 +64,7 @@
       <n-input
           v-model:value="translatedText"
           type="textarea"
-          :rows="5"
+          :rows="4"
           :placeholder="language.pages.plugins.translate.translatedPlaceholder"
           class="text-input"
           readonly
@@ -129,7 +129,9 @@ const targetLangOptions = computed(() => [
   {label: language.value.pages.plugins.translate.ru, value: 'ru'},
 ])
 
-// 计算属性
+/**
+ * 计算属性
+ */
 const engineName = computed(() => {
   const names: Record<string, string> = {
     google: language.value.pages.plugins.translate.GoogleTranslate,
@@ -140,7 +142,9 @@ const engineName = computed(() => {
   return names[config.value.translationEngine] || config.value.translationEngine
 })
 
-// 执行翻译
+/**
+ * 执行翻译
+ */
 async function doTranslate() {
   if (!sourceText.value.trim()) {
     return
@@ -174,7 +178,9 @@ async function doTranslate() {
   }
 }
 
-// 交换语言
+/**
+ * 交换语言
+ */
 function swapLanguages() {
   if (config.value.sourceLanguage !== 'auto') {
     const temp = config.value.sourceLanguage
@@ -186,7 +192,10 @@ function swapLanguages() {
   }
 }
 
-// 复制文本
+/**
+ * 复制文本
+ * @param text 要复制的文本
+ */
 async function copyText(text: string) {
   if (!text) return
   try {
@@ -197,10 +206,30 @@ async function copyText(text: string) {
   }
 }
 
-// 监听重新加载事件
+/**
+ * 加载当前设置的翻译引擎
+ */
+async function loadEngine() {
+  const configResult = await invoke('invoke_external_plugin', {
+    pluginId: 'translate',
+    pluginName: 'translate_plugin.exe',
+    cmd: 'get-config',
+    payload: '{}',
+  }) as string
+
+  const configResponse = JSON.parse(configResult)
+  if (configResponse.result) {
+    const savedConfig = JSON.parse(configResponse.result)
+    config.value.translationEngine = savedConfig.translationEngine
+  }
+}
+
+/**
+ * 初始化重载监听器
+ */
 let reloadListener: any = null
 
-async function initReloadListener() {
+async function initReloadListener(): Promise<void> {
   reloadListener = await listen('reload-translate-text', async (event: any) => {
     console.log('加载新的翻译文本', event.payload)
     const itemId = event.payload.itemId;
@@ -215,8 +244,26 @@ async function initReloadListener() {
   })
 }
 
+/**
+ * 初始化翻译引擎切换监听器
+ */
+let changeTranslateEngineListener: any = null
+async function initChangeTranslateEngineListener(): Promise<void> {
+  changeTranslateEngineListener = await listen('change-translate-engine', async (_event: any) => {
+    console.log('翻译引擎已切换')
+    await loadEngine();
+    console.log(config.value)
+    await doTranslate()
+  })
+}
+
 onMounted(async () => {
-  await initReloadListener()
+  // 加载当前翻译引擎
+  await loadEngine();
+  // 监听数据重新加载事件
+  await initReloadListener();
+  // 监听翻译引擎切换事件
+  await initChangeTranslateEngineListener();
 
   // 从 URL 参数获取文本
   const searchParams = new URLSearchParams(window.location.search)
@@ -231,6 +278,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   reloadListener?.();
+  changeTranslateEngineListener?.();
 })
 </script>
 
@@ -240,7 +288,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100vh;
+  height: calc(100vh - 25px);
   box-sizing: border-box;
 }
 

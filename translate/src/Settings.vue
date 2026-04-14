@@ -22,14 +22,7 @@
         <span>{{ language.pages.plugins.translate.apiKey }}</span>
         <n-tooltip trigger="hover">
           <template #trigger>
-            <svg class="hint-icon" viewBox="0 0 1024 1024">
-              <path
-                  d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"
-                  fill="currentColor"/>
-              <path d="M512 336m-40 0a40 40 0 1 0 80 0 40 40 0 1 0-80 0Z" fill="currentColor"/>
-              <path d="M536 448h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"
-                    fill="currentColor"/>
-            </svg>
+            <font-awesome-icon :icon="faCircleQuestion" class="hint-icon" />
           </template>
           <span>{{ getApiKeyHint() }}</span>
         </n-tooltip>
@@ -97,6 +90,8 @@
 import {computed, onMounted, ref} from 'vue'
 import {NAlert, NButton, NDivider, NInput, NSelect, NTooltip, useMessage} from 'naive-ui'
 import {invoke} from '@tauri-apps/api/core'
+import {faCircleQuestion} from "@fortawesome/free-regular-svg-icons";
+import {emit} from "@tauri-apps/api/event";
 
 const message = useMessage()
 
@@ -135,65 +130,76 @@ const getApiKeyHint = () => {
   return hints[currentEngine.value] || ''
 }
 
-// 引擎切换时，当前显示的API key已经绑定到对应的引擎
-// 不需要额外处理，因为 apiKeys 是响应式对象
-function onEngineChange(newEngine: string) {
-  console.log('切换到引擎:', newEngine)
-  // 保存当前引擎设置到后端（但不保存API keys，等用户点击保存按钮）
-  saveEngineSetting(newEngine)
+/**
+ * 引擎切换
+ * @param engine
+ */
+async function onEngineChange(engine: string) {
+  console.log('切换到引擎:', engine)
 }
 
-// 保存引擎设置
-async function saveEngineSetting(engine: string) {
+
+// 保存配置
+async function saveConfig() {
+  saving.value = true
   try {
-    // 先加载当前配置，保留用户的语言设置
-    const configResult = await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'get-config',
-      payload: '{}',
-    }) as string
-
-    let currentConfig = {sourceLanguage: 'auto', targetLanguage: 'zh'}
-    try {
-      const parsed = JSON.parse(JSON.parse(configResult).result || '{}')
-      currentConfig = {...currentConfig, ...parsed}
-    } catch (e) {
-      // 使用默认值
-    }
-
+    // 保存引擎设置
     await invoke('invoke_external_plugin', {
       pluginId: 'translate',
       pluginName: 'translate_plugin.exe',
       cmd: 'save-config',
       payload: JSON.stringify({
-        translationEngine: engine,
-        sourceLanguage: currentConfig.source_language || currentConfig.sourceLanguage || 'auto',
-        targetLanguage: currentConfig.target_language || currentConfig.targetLanguage || 'zh',
+        translationEngine: currentEngine.value,
       }),
     })
+
+    // 保存API Keys
+    const result = await invoke('invoke_external_plugin', {
+      pluginId: 'translate',
+      pluginName: 'translate_plugin.exe',
+      cmd: 'save-api-keys',
+      payload: JSON.stringify(apiKeys.value),
+    }) as string
+
+    const response = JSON.parse(result)
+    if (response.result === 'success') {
+      console.log('保存API Keys成功', currentEngine, apiKeys)
+      await emit('change-translate-engine');
+      message.success(language.value.pages.plugins.translate.saveSuccess)
+    } else {
+      message.error(language.value.pages.plugins.translate.saveFailed)
+    }
   } catch (e) {
-    console.error('保存引擎设置失败:', e)
+    console.error('保存配置失败:', e)
+    message.error(language.value.pages.plugins.translate.saveFailed)
+  } finally {
+    saving.value = false
   }
 }
 
-// 加载配置
-async function loadConfig() {
+/**
+ * 加载当前设置的翻译引擎
+ */
+async function loadEngine() {
+  const configResult = await invoke('invoke_external_plugin', {
+    pluginId: 'translate',
+    pluginName: 'translate_plugin.exe',
+    cmd: 'get-config',
+    payload: '{}',
+  }) as string
+
+  const configResponse = JSON.parse(configResult)
+  if (configResponse.result) {
+    const savedConfig = JSON.parse(configResponse.result)
+    currentEngine.value = savedConfig.translationEngine || 'baidu'
+  }
+}
+
+/**
+ * 加载API Keys
+ */
+async function loadApiKeys() {
   try {
-    // 加载引擎设置
-    const configResult = await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'get-config',
-      payload: '{}',
-    }) as string
-
-    const configResponse = JSON.parse(configResult)
-    if (configResponse.result) {
-      const savedConfig = JSON.parse(configResponse.result)
-      currentEngine.value = savedConfig.translationEngine || 'baidu'
-    }
-
     // 加载API Keys
     const keysResult = await invoke('invoke_external_plugin', {
       pluginId: 'translate',
@@ -208,62 +214,23 @@ async function loadConfig() {
       apiKeys.value = {...apiKeys.value, ...savedKeys}
     }
   } catch (e) {
-    console.error('加载配置失败:', e)
+    console.error('加载API Keys失败:', e)
     message.error(language.value.pages.plugins.translate.loadFailed)
   }
 }
 
-// 保存配置
-async function saveConfig() {
-  saving.value = true
+/**
+ * 加载翻译配置
+ */
+async function loadConfig() {
   try {
-    // 先加载当前配置，保留用户的语言设置
-    const configResult = await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'get-config',
-      payload: '{}',
-    }) as string
-
-    let currentConfig = {sourceLanguage: 'auto', targetLanguage: 'zh'}
-    try {
-      const parsed = JSON.parse(JSON.parse(configResult).result || '{}')
-      currentConfig = {...currentConfig, ...parsed}
-    } catch (e) {
-      // 使用默认值
-    }
-
-    // 保存引擎设置
-    await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'save-config',
-      payload: JSON.stringify({
-        translationEngine: currentEngine.value,
-        sourceLanguage: currentConfig.source_language || currentConfig.sourceLanguage || 'auto',
-        targetLanguage: currentConfig.target_language || currentConfig.targetLanguage || 'zh',
-      }),
-    })
-
-    // 保存API Keys
-    const result = await invoke('invoke_external_plugin', {
-      pluginId: 'translate',
-      pluginName: 'translate_plugin.exe',
-      cmd: 'save-api-keys',
-      payload: JSON.stringify(apiKeys.value),
-    }) as string
-
-    const response = JSON.parse(result)
-    if (response.result === 'success') {
-      message.success(language.value.pages.plugins.translate.saveSuccess)
-    } else {
-      message.error(language.value.pages.plugins.translate.saveFailed)
-    }
+    // 加载引擎设置
+    await loadEngine();
+    // 加载API Keys
+    await loadApiKeys();
   } catch (e) {
-    console.error('保存配置失败:', e)
-    message.error(language.value.pages.plugins.translate.saveFailed)
-  } finally {
-    saving.value = false
+    console.error('加载配置失败:', e)
+    message.error(language.value.pages.plugins.translate.loadFailed)
   }
 }
 

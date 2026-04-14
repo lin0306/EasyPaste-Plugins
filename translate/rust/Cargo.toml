@@ -1,6 +1,6 @@
 [package]
 name = "translate_plugin"
-version = "0.1.0"
+version = "0.0.3"
 edition = "2021"
 
 [dependencies]
@@ -13,8 +13,6 @@ tokio = { version = "1", features = ["full"] }
 
 # 加密
 md5 = "0.7"
-base64 = "0.22"
-urlencoding = "2.1"
 
 # 日志
 log = "0.4.29"
