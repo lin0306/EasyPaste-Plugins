@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read};
 use std::path::PathBuf;
 
 use log::{info, LevelFilter};
-use rten::Model;
+use ocr_rs::{DetModel, DetOptions, RecModel};
 
 #[derive(Deserialize, Debug)]
 struct Request {
@@ -21,15 +22,12 @@ struct Response {
 struct OcrConfig {
     #[serde(rename = "ocrMode")]
     ocr_mode: String,
-    #[serde(rename = "ocrLanguage")]
-    ocr_language: String,
 }
 
 impl Default for OcrConfig {
     fn default() -> Self {
         Self {
             ocr_mode: "window".to_string(),
-            ocr_language: "chi_sim+eng".to_string(),
         }
     }
 }
@@ -69,54 +67,45 @@ fn main() {
             // 新的右键菜单命令 - 根据配置决定行为
             let payload_obj: serde_json::Value = serde_json::from_str(&req.payload).unwrap();
             let file_path = payload_obj["filePath"].as_str().unwrap_or("");
-            
+
             // 加载配置
             let config = load_config();
-            
+
             if config.ocr_mode == "quick" {
                 // 快速模式：直接识别并返回文本，前端负责复制到剪贴板
                 info!("OCR 快速模式识别: {}", file_path);
-                
-                // 确保模型已下载
-                if let Err(e) = ensure_models() {
-                    let action_resp = ActionResponse {
-                        action: "error".to_string(),
-                        text: Some(format!("模型加载失败: {}", e)),
-                        title: None,
-                        width: None,
-                        height: None,
-                    };
-                    Response { result: serde_json::to_string(&action_resp).unwrap() }
-                } else {
-                    // 执行 OCR 识别
-                    match recognize_text(file_path) {
-                        Ok(text) => {
-                            let cleaned = clean_ocr_text(&text);
-                            let result_text = if cleaned.trim().is_empty() {
-                                "未能识别出文字".to_string()
-                            } else {
-                                cleaned
-                            };
-                            
-                            let action_resp = ActionResponse {
-                                action: "copyToClipboard".to_string(),
-                                text: Some(result_text),
-                                title: None,
-                                width: None,
-                                height: None,
-                            };
-                            Response { result: serde_json::to_string(&action_resp).unwrap() }
+
+                // 执行 OCR 识别
+                match recognize_text(file_path) {
+                    Ok(text) => {
+                        let result_text = if text.trim().is_empty() {
+                            "未能识别出文字".to_string()
+                        } else {
+                            text.trim().to_string()
+                        };
+
+                        let action_resp = ActionResponse {
+                            action: "copyToClipboard".to_string(),
+                            text: Some(result_text),
+                            title: None,
+                            width: None,
+                            height: None,
+                        };
+                        Response {
+                            result: serde_json::to_string(&action_resp).unwrap(),
                         }
-                        Err(e) => {
-                            info!("OCR 识别失败: {}", e);
-                            let action_resp = ActionResponse {
-                                action: "error".to_string(),
-                                text: Some(format!("OCR 识别失败: {}", e)),
-                                title: None,
-                                width: None,
-                                height: None,
-                            };
-                            Response { result: serde_json::to_string(&action_resp).unwrap() }
+                    }
+                    Err(e) => {
+                        info!("OCR 识别失败: {}", e);
+                        let action_resp = ActionResponse {
+                            action: "error".to_string(),
+                            text: Some(format!("OCR 识别失败: {}", e)),
+                            title: None,
+                            width: None,
+                            height: None,
+                        };
+                        Response {
+                            result: serde_json::to_string(&action_resp).unwrap(),
                         }
                     }
                 }
@@ -129,7 +118,9 @@ fn main() {
                     width: Some(800),
                     height: Some(600),
                 };
-                Response { result: serde_json::to_string(&action_resp).unwrap() }
+                Response {
+                    result: serde_json::to_string(&action_resp).unwrap(),
+                }
             }
         }
         "get-config" => {
@@ -142,7 +133,11 @@ fn main() {
             let config: OcrConfig = serde_json::from_str(&req.payload).unwrap();
             let result = save_config(&config);
             Response {
-                result: if result { "success".to_string() } else { "failed".to_string() },
+                result: if result {
+                    "success".to_string()
+                } else {
+                    "failed".to_string()
+                },
             }
         }
         _ => Response {
@@ -162,19 +157,14 @@ fn do_ocr(file_path: &str) -> String {
         return "文件不存在".to_string();
     }
 
-    // 确保模型已下载
-    if let Err(e) = ensure_models() {
-        return format!("模型加载失败: {}\n\n请检查网络连接后重试。", e);
-    }
-
     // 使用 ocrs 进行 OCR 识别
     match recognize_text(file_path) {
         Ok(text) => {
-            let cleaned = clean_ocr_text(&text);
-            if cleaned.trim().is_empty() {
+            info!("OCR 识别结果: {}", text);
+            if text.trim().is_empty() {
                 "未能识别出文字".to_string()
             } else {
-                cleaned
+                text.trim().to_string()
             }
         }
         Err(e) => {
@@ -184,145 +174,56 @@ fn do_ocr(file_path: &str) -> String {
     }
 }
 
-/// 模型文件信息
-const DETECTION_MODEL_URL: &str = "https://ocrs-models.s3-accelerate.amazonaws.com/text-detection.rten";
-const RECOGNITION_MODEL_URL: &str = "https://ocrs-models.s3-accelerate.amazonaws.com/text-recognition.rten";
-const DETECTION_MODEL_NAME: &str = "text-detection.rten";
-const RECOGNITION_MODEL_NAME: &str = "text-recognition.rten";
-
-/// 获取模型目录路径
-fn get_models_dir() -> PathBuf {
-    get_app_data_dir().join("models")
-}
-
-/// 确保模型文件已下载
-fn ensure_models() -> anyhow::Result<()> {
-    let models_dir = get_models_dir();
-    let detection_path = models_dir.join(DETECTION_MODEL_NAME);
-    let recognition_path = models_dir.join(RECOGNITION_MODEL_NAME);
-
-    // 创建模型目录
-    if !models_dir.exists() {
-        fs::create_dir_all(&models_dir)?;
-    }
-
-    // 下载检测模型（如果不存在）
-    if !detection_path.exists() {
-        info!("正在下载检测模型...");
-        download_file(DETECTION_MODEL_URL, &detection_path)?;
-        info!("检测模型下载完成");
-    }
-
-    // 下载识别模型（如果不存在）
-    if !recognition_path.exists() {
-        info!("正在下载识别模型...");
-        download_file(RECOGNITION_MODEL_URL, &recognition_path)?;
-        info!("识别模型下载完成");
-    }
-
-    Ok(())
-}
-
-/// 下载文件
-fn download_file(url: &str, path: &PathBuf) -> anyhow::Result<()> {
-    let response = ureq::get(url)
-        .timeout(std::time::Duration::from_secs(120))
-        .call()?;
-
-    let mut file = fs::File::create(path)?;
-    
-    // ureq 2.x API
-    let mut reader = response.into_reader();
-    io::copy(&mut reader, &mut file)?;
-    
-    Ok(())
-}
-
 /// 使用 ocrs 识别图片文字
 fn recognize_text(image_path: &str) -> anyhow::Result<String> {
-    use ocrs::{OcrEngine, OcrEngineParams};
-
-    // 加载模型
-    let models_dir = get_models_dir();
-    let detection_model_data = fs::read(models_dir.join(DETECTION_MODEL_NAME))?;
-    let recognition_model_data = fs::read(models_dir.join(RECOGNITION_MODEL_NAME))?;
-    
-    let detection_model = Model::load(detection_model_data)?;
-    let recognition_model = Model::load(recognition_model_data)?;
-
-    // 创建 OCR 引擎
-    let engine = OcrEngine::new(OcrEngineParams {
-        detection_model: Some(detection_model),
-        recognition_model: Some(recognition_model),
-        ..Default::default()
-    })?;
-    
-    // 读取图片
-    let img = image::open(image_path)?;
-    let img_rgb = img.to_rgb8();
-    
-    // 转换图片为输入格式
-    let (width, height) = img_rgb.dimensions();
-    let pixels: Vec<u8> = img_rgb.into_raw();
-    
-    // 创建图像源 (RGBA 格式，每个像素 4 字节)
-    let rgba_pixels: Vec<u8> = pixels.chunks(3)
-        .flat_map(|rgb| vec![rgb[0], rgb[1], rgb[2], 255])
-        .collect();
-    
-    let input = ocrs::ImageSource::from_bytes(&rgba_pixels, (width, height))?;
-    
-    // 预处理图片
-    let ocr_input = engine.prepare_input(input)?;
-    
-    // 使用简便 API 获取所有文本
-    let text = engine.get_text(&ocr_input)?;
-    
-    Ok(text)
-}
-
-/// 清理 OCR 文本
-fn clean_ocr_text(s: &str) -> String {
-    let chars: Vec<char> = s.chars().collect();
-    let mut result = String::new();
-    let len = chars.len();
-
-    for i in 0..len {
-        let c = chars[i];
-
-        // 如果当前字符是 ASCII 空格
-        if c.is_ascii_whitespace() {
-            // 检查前一个和后一个字符是否都是汉字
-            let prev_is_han = i > 0 && is_han_char(chars[i - 1]);
-            let next_is_han = i + 1 < len && is_han_char(chars[i + 1]);
-
-            // 如果前后都是汉字，则跳过这个空格
-            if prev_is_han && next_is_han {
-                continue;
-            }
-        }
-
-        result.push(c);
+    let exe_path = env::current_exe().expect("获取OCR插件文件地址失败");
+    let models_path = exe_path
+        .parent()
+        .expect("获取OCR程序文件目录失败")
+        .parent()
+        .expect("获取OCR插件文件目录失败")
+        .join("models");
+    info!("模型文件目录: {:?}", models_path);
+    let det_model_path = models_path.join("PP-OCRv5_mobile_det.mnn");
+    info!("检测模型文件路径: {:?}", det_model_path);
+    let rec_model_path = models_path.join("PP-OCRv5_mobile_rec.mnn");
+    info!("识别模型文件路径: {:?}", rec_model_path);
+    let keys_model_path = models_path.join("ppocr_keys_v5.txt");
+    info!("字典文件路径: {:?}", keys_model_path);
+    if !det_model_path.exists() || !rec_model_path.exists() || !keys_model_path.exists() {
+        return Err(anyhow::anyhow!("模型文件不存在，请重新下载"));
     }
 
-    result.trim().to_string()
-}
+    // 创建检测模型
+    let det = DetModel::from_file(det_model_path, None)?.with_options(DetOptions::fast());
+    info!("检测模型加载成功");
 
-fn is_han_char(c: char) -> bool {
-    ('\u{4e00}'..='\u{9fff}').contains(&c)
-        || ('\u{3400}'..='\u{4dbf}').contains(&c)
-        || ('\u{20000}'..='\u{2a6df}').contains(&c)
-        || is_chinese_punctuation(c)
-}
+    // 创建识别模型
+    let rec = RecModel::from_file(rec_model_path, keys_model_path, None)?;
+    info!("识别模型加载成功");
 
-fn is_chinese_punctuation(c: char) -> bool {
-    matches!(c, '，' | '。' | '！' | '？' | '；' | '：' | '"' | '\'' | '（' | '）' | '【' | '】' | '《' | '》' | '〈' | '〉' | '「' | '」' | '『' | '』' | '、' | '·' | '…' | '—' | '–')
+    // 加载图片
+    let image = image::open(image_path)?;
+    info!("图片加载成功");
+
+    // 检测并裁剪文本区域
+    let detections = det.detect_and_crop(&image)?;
+    info!("检测结果获取完成");
+
+    // 识别每个文本区域
+    let mut all_texts: Vec<String> = Vec::new();
+    for (cropped_img, _bbox) in detections {
+        let result = rec.recognize(&cropped_img)?;
+        all_texts.push(result.text);
+    }
+    info!("识别结果: {}", all_texts.join("\n"));
+    Ok(all_texts.join("\n"))
 }
 
 /// 加载配置
 fn load_config() -> OcrConfig {
     let config_path = get_config_path();
-    
+
     if !config_path.exists() {
         return OcrConfig::default();
     }
@@ -337,7 +238,7 @@ fn load_config() -> OcrConfig {
 fn save_config(config: &OcrConfig) -> bool {
     let config_path = get_config_path();
     info!("保存配置，路径: {}", config_path.display());
-    
+
     if let Some(parent) = config_path.parent() {
         if !parent.exists() {
             if fs::create_dir_all(parent).is_err() {
@@ -355,7 +256,7 @@ fn save_config(config: &OcrConfig) -> bool {
 /// 获取应用数据目录
 fn get_app_data_dir() -> PathBuf {
     // 首先尝试从环境变量获取（由主应用传递）
-    if let Ok(data_dir) = std::env::var("EASYPASTE_DATA_DIR") {
+    if let Ok(data_dir) = env::var("EASYPASTE_DATA_DIR") {
         let path = PathBuf::from(data_dir).join("plugins").join("ocr");
         if !path.exists() {
             let _ = fs::create_dir_all(&path);
@@ -364,7 +265,7 @@ fn get_app_data_dir() -> PathBuf {
     }
 
     // 获取主程序的Identifier
-    let result_path = match std::env::var("EASYPASTE_IDENTIFIER") {
+    let result_path = match env::var("EASYPASTE_IDENTIFIER") {
         Ok(identifier) => identifier,
         _ => "com.lin.EasyPaste".to_string(),
     };
@@ -380,11 +281,14 @@ fn get_app_data_dir() -> PathBuf {
             return path;
         }
     }
-    
+
     #[cfg(target_os = "macos")]
     {
         if let Some(home) = dirs::home_dir() {
-            let path = home.join("Library/Application Support").join(result_path).join("plugins/ocr");
+            let path = home
+                .join("Library/Application Support")
+                .join(result_path)
+                .join("plugins/ocr");
 
             if !path.exists() {
                 let _ = fs::create_dir_all(&path);
@@ -392,9 +296,9 @@ fn get_app_data_dir() -> PathBuf {
             return path;
         }
     }
-    
+
     // 最后回退到插件目录
-    let exe_path = std::env::current_exe().unwrap_or_default();
+    let exe_path = env::current_exe().unwrap_or_default();
     let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
     exe_dir.join("config")
 }
@@ -406,10 +310,13 @@ fn get_config_path() -> PathBuf {
 
 /// 初始化日志配置
 pub fn init_logger() {
-    let log_path = get_app_data_dir().join("logs").join("ocr.log");
+    let log_path = match env::var("EASYPASTE_LOGS") {
+        Ok(log_dir) => PathBuf::from(log_dir).join("ocr").join("ocr.log"),
+        _ => get_app_data_dir().join("ocr").join("ocr.log"),
+    };
 
     let logs_dir = log_path.parent().unwrap();
-    std::fs::create_dir_all(logs_dir).expect("无法创建日志目录");
+    fs::create_dir_all(logs_dir).expect("无法创建日志目录");
 
     let log_file = OpenOptions::new()
         .create(true)

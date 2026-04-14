@@ -27,18 +27,6 @@
       />
     </div>
 
-    <!-- 识别语言选择 -->
-    <div class="setting-item">
-      <div class="setting-label">
-        <span>{{ language.pages.plugins.ocr.ocrLanguage }}</span>
-      </div>
-      <n-select
-          v-model:value="config.ocrLanguage"
-          :options="ocrLanguageOptions"
-          class="setting-select"
-      />
-    </div>
-
     <!-- 保存按钮 -->
     <div class="setting-actions">
       <n-button type="primary" :loading="saving" @click="saveConfig">
@@ -84,16 +72,6 @@ const language = computed(() => window.currentLanguage?.value || window.currentL
 const ocrModeOptions = computed(() => [
   {label: language.value.pages.plugins.ocr.windowModel, value: 'window'},
   {label: language.value.pages.plugins.ocr.quickModel, value: 'quick'},
-])
-
-// OCR 语言选项
-const ocrLanguageOptions = computed(() => [
-  {label: language.value.pages.plugins.ocr.chiSimAndEng, value: 'chi_sim+eng'},
-  {label: language.value.pages.plugins.ocr.chiSim, value: 'chi_sim'},
-  {label: language.value.pages.plugins.ocr.eng, value: 'eng'},
-  {label: language.value.pages.plugins.ocr.chiTra, value: 'chi_tra'},
-  {label: language.value.pages.plugins.ocr.jpn, value: 'jpn'},
-  {label: language.value.pages.plugins.ocr.kor, value: 'kor'},
 ])
 
 // 加载配置
