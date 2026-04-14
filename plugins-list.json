@@ -2,19 +2,19 @@
   {
     "id": "ocr",
     "name": "OCR",
-    "version": "0.0.3",
-    "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
+    "version": "0.0.4",
+    "description": "基于 ocr-rs (MNN) 的离线 OCR 插件，支持 PP-OCRv5 模型，无需联网，开箱即用",
     "platform": "Windows",
-    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/ocr-0.0.3/ocr.zip",
-    "size": 3816562
+    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/ocr-v0.0.4/ocr.zip",
+    "size": 20578072
   },
   {
     "id": "translate",
     "name": "文本翻译",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "多引擎翻译插件，支持 Google、DeepL、百度、有道等翻译服务",
     "platform": "Windows",
-    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/translate-v0.0.2/translate.zip",
-    "size": 1228748
+    "downloadUrl": "https://gh.llkk.cc/https://github.com/lin0306/EasyPaste-Plugins/releases/download/translate-v0.0.3/translate.zip",
+    "size": 1231879
   }
 ]
