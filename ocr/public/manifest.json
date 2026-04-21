@@ -1,8 +1,8 @@
 {
   "id": "ocr",
   "name": "OCR",
-  "version": "0.0.3",
-  "description": "基于 ocrs 的离线 OCR 插件，纯 Rust 实现，无需联网，开箱即用",
+  "version": "0.0.4",
+  "description": "基于 ocr-rs (MNN) 的离线 OCR 插件，支持 PP-OCRv5 模型，无需联网，开箱即用",
   "platform": "Windows",
   "features": [
     {
