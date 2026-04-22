@@ -27,6 +27,7 @@ pub async fn translate_text(text: &str, config: TranslateConfig) -> String {
         "deepl" => engines::deepl::translate(text, config).await,
         "baidu" => engines::baidu::translate(text, config).await,
         "youdao" => engines::youdao::translate(text, config).await,
+        "microsoft" => engines::microsoft::translate(text, config).await,
         _ => "不支持的翻译引擎".to_string(),
     }
 }

@@ -1,1 +1,1 @@
-pub mod google;pub mod deepl;pub mod baidu;pub mod youdao;
+pub mod google;pub mod deepl;pub mod baidu;pub mod youdao;pub mod microsoft;

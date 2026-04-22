@@ -39,3 +39,11 @@ pub struct ApiKeysConfig {
     pub baidu: String,
     pub youdao: String,
 }
+
+/// 微软翻译配置
+#[derive(Debug)]
+pub struct BingConfig {
+    pub ig: String,
+    pub key: String,
+    pub token: String,
+}

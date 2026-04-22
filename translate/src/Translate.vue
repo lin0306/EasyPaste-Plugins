@@ -96,7 +96,7 @@ const sourceText = ref('')
 const translatedText = ref('')
 const translating = ref(false)
 const config = ref({
-  translationEngine: 'baidu',
+  translationEngine: 'microsoft',
   sourceLanguage: 'auto',
   targetLanguage: 'zh',
 })
@@ -138,6 +138,7 @@ const engineName = computed(() => {
     deepl: language.value.pages.plugins.translate.DeepL,
     baidu: language.value.pages.plugins.translate.BaiDuTranslate,
     youdao: language.value.pages.plugins.translate.YouDaoTranslate,
+    microsoft: language.value.pages.plugins.translate.MicrosoftTranslate,
   }
   return names[config.value.translationEngine] || config.value.translationEngine
 })
@@ -164,6 +165,7 @@ async function doTranslate() {
       }),
     }) as string
 
+    console.log('翻译结果:', result)
     const response = JSON.parse(result)
     if (response.translation) {
       translatedText.value = response.translation

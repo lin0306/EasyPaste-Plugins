@@ -8,16 +8,16 @@
         <span>{{ language.pages.plugins.translate.translationEngine }}</span>
       </div>
       <n-select
-          v-model:value="currentEngine"
-          :options="engineOptions"
-          class="setting-select"
-          @update:value="onEngineChange"
-          :teleported="false"
+        v-model:value="currentEngine"
+        :options="engineOptions"
+        class="setting-select"
+        @update:value="onEngineChange"
+        :teleported="false"
       />
     </div>
 
     <!-- API Key -->
-    <div class="setting-item">
+    <div class="setting-item" v-if="currentEngine && currentEngine !== 'microsoft'">
       <div class="setting-label">
         <span>{{ language.pages.plugins.translate.apiKey }}</span>
         <n-tooltip trigger="hover">
@@ -28,11 +28,11 @@
         </n-tooltip>
       </div>
       <n-input
-          v-model:value="apiKeys[currentEngine]"
-          type="password"
-          :show-password-on="'click'"
-          :placeholder="language.pages.plugins.translate.apiKeyPlaceholder"
-          class="setting-input"
+        v-model:value="apiKeys[currentEngine]"
+        type="password"
+        :show-password-on="'click'"
+        :placeholder="language.pages.plugins.translate.apiKeyPlaceholder"
+        class="setting-input"
       />
     </div>
 
@@ -44,41 +44,41 @@
     </div>
 
     <!-- API 说明 -->
-    <n-alert type="info" class="api-hint" v-if="currentEngine">
+    <n-alert type="info" class="api-hint" v-if="currentEngine && currentEngine !== 'microsoft'">
       <template #header>
         {{ language.pages.plugins.translate.apiHintTitle }}
       </template>
       <div v-if="currentEngine === `google`">
-        <p><b>{{language.pages.plugins.translate.google.descTitle}}</b></p>
+        <p><b>{{ language.pages.plugins.translate.google.descTitle }}</b></p>
         <ul>
-          <li>{{language.pages.plugins.translate.google.require}}</li>
+          <li>{{ language.pages.plugins.translate.google.require }}</li>
           <li v-html="language.pages.plugins.translate.google.access"></li>
-          <li>{{language.pages.plugins.translate.google.limit}}</li>
+          <li>{{ language.pages.plugins.translate.google.limit }}</li>
         </ul>
       </div>
       <div v-if="currentEngine === `deepl`">
-        <p><b>{{language.pages.plugins.translate.deepl.descTitle}}</b></p>
+        <p><b>{{ language.pages.plugins.translate.deepl.descTitle }}</b></p>
         <ul>
-          <li>{{language.pages.plugins.translate.deepl.require}}</li>
+          <li>{{ language.pages.plugins.translate.deepl.require }}</li>
           <li v-html="language.pages.plugins.translate.deepl.access"></li>
-          <li>{{language.pages.plugins.translate.deepl.limit}}</li>
+          <li>{{ language.pages.plugins.translate.deepl.limit }}</li>
         </ul>
       </div>
       <div v-if="currentEngine === `baidu`">
-        <p><b>{{language.pages.plugins.translate.baidu.descTitle}}</b></p>
+        <p><b>{{ language.pages.plugins.translate.baidu.descTitle }}</b></p>
         <ul>
-          <li>{{language.pages.plugins.translate.baidu.require}}</li>
+          <li>{{ language.pages.plugins.translate.baidu.require }}</li>
           <li v-html="language.pages.plugins.translate.baidu.access"></li>
-          <li>{{language.pages.plugins.translate.baidu.limit}}</li>
+          <li>{{ language.pages.plugins.translate.baidu.limit }}</li>
           <li v-html="language.pages.plugins.translate.baidu.formatRequire"></li>
         </ul>
       </div>
       <div v-if="currentEngine === `youdao`">
-        <p><b>{{language.pages.plugins.translate.youdao.descTitle}}</b></p>
+        <p><b>{{ language.pages.plugins.translate.youdao.descTitle }}</b></p>
         <ul>
-          <li>{{language.pages.plugins.translate.youdao.require}}</li>
+          <li>{{ language.pages.plugins.translate.youdao.require }}</li>
           <li v-html="language.pages.plugins.translate.youdao.access"></li>
-          <li>{{language.pages.plugins.translate.youdao.limit}}</li>
+          <li>{{ language.pages.plugins.translate.youdao.limit }}</li>
           <li v-html="language.pages.plugins.translate.youdao.formatRequire"></li>
         </ul>
       </div>
@@ -99,7 +99,7 @@ const message = useMessage()
 const language = computed(() => window.currentLanguage?.value || window.currentLanguage)
 
 // 当前选中的引擎
-const currentEngine = ref('baidu')
+const currentEngine = ref('microsoft')
 
 // 每个引擎的API key
 const apiKeys = ref<Record<string, string>>({
@@ -113,6 +113,7 @@ const saving = ref(false)
 
 // 引擎选项
 const engineOptions = computed(() => [
+  {label: language.value.pages.plugins.translate.MicrosoftTranslate, value: 'microsoft'},
   {label: language.value.pages.plugins.translate.GoogleTranslate, value: 'google'},
   {label: language.value.pages.plugins.translate.DeepL, value: 'deepl'},
   {label: language.value.pages.plugins.translate.BaiDuTranslate, value: 'baidu'},
@@ -191,7 +192,7 @@ async function loadEngine() {
   const configResponse = JSON.parse(configResult)
   if (configResponse.result) {
     const savedConfig = JSON.parse(configResponse.result)
-    currentEngine.value = savedConfig.translationEngine || 'baidu'
+    currentEngine.value = savedConfig.translationEngine || 'microsoft'
   }
 }
 

@@ -95,7 +95,7 @@ pub fn init_logger() {
         .expect("无法创建日志文件");
 
     env_logger::Builder::new()
-        .filter_level(LevelFilter::Debug)
+        .filter_level(LevelFilter::Info)
         .target(env_logger::Target::Pipe(Box::new(log_file)))
         .format(|buf, record| {
             use std::io::Write;

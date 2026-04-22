@@ -3,7 +3,7 @@ use crate::translate::{ApiKeysConfig, EngineConfig};
 impl Default for EngineConfig {
     fn default() -> Self {
         Self {
-            translation_engine: "baidu".to_string(),
+            translation_engine: "microsoft".to_string(),
         }
     }
 }
