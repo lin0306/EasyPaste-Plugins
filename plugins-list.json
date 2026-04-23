@@ -2,6 +2,7 @@
   {
     "id": "ocr",
     "name": "OCR",
+    "branch": "GA",
     "version": "0.0.4",
     "description": "基于 ocr-rs (MNN) 的离线 OCR 插件，支持 PP-OCRv5 模型，无需联网，开箱即用",
     "platform": "Windows",
@@ -11,6 +12,7 @@
   {
     "id": "translate",
     "name": "文本翻译",
+    "branch": "GA",
     "version": "0.0.4",
     "description": "多引擎翻译插件，支持 Microsoft、Google、DeepL、百度、有道等翻译服务",
     "platform": "Windows",
