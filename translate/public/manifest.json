@@ -4,6 +4,8 @@
   "version": "0.0.4",
   "description": "多引擎翻译插件，支持 Microsoft、Google、DeepL、百度、有道等翻译服务",
   "platform": "Windows",
+  "fileName": "translate.zip",
+  "releaseUrl": "https://github.com/lin0306/EasyPaste-Plugins/releases/tag/translate-v0.0.4",
   "features": [
     {
       "id": "translate-context",
